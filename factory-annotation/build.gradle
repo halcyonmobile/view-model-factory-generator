@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'maven-publish'
+
+project.ext.set("libraryArtifactId", "factory-annotation")
+project.ext.set("bintrayPackageName", "android-viewmodel-factory-generator:annotation")
+
+sourceCompatibility = "$javaSourceVersion"
+targetCompatibility = "$javaSourceVersion"
+
+apply from: "../deploy.gradle"
