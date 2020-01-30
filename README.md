@@ -1,4 +1,4 @@
-# README #
+# DEPRECATED: Square had the same idea, so I would kindly suggest to use that instead: https://github.com/square/AssistedInject #
 
 This README would normally document whatever steps are necessary to get your application up and running.
 
