@@ -7,23 +7,19 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.2.41'
+    ext.kotlin_version = '1.3.61'
+    ext.javaSourceVersion = '1.8'
 
     repositories {
         google()
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.2'
-        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.6.0"
+        classpath 'com.android.tools.build:gradle:3.5.3'
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.7.3"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
-
-        // Bintray
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+        classpath 'com.halcyonmobile.publish.artifactory-bintray:java-and-aar:0.1.0.1'
     }
 }
 
@@ -46,7 +42,4 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-ext {
-    libraryVersion = '0.0.1.beta1'
-    javaSourceVersion = '1.8'
-}
+apply from: "./deploy.gradle"

@@ -1,12 +1,5 @@
 apply plugin: 'kotlin'
 apply plugin: 'java-library'
-apply plugin: 'com.jfrog.artifactory'
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'maven-publish'
-
-project.ext.set("libraryArtifactId", "processor")
-project.ext.set("bintrayPackageName", "android-viewmodel-factory-generator:processor")
 
 dependencies {
     implementation project(':factory-annotation')
@@ -35,8 +28,9 @@ compileTestKotlin {
 }
 
 
-apply from: "../deploy.gradle"
-
 repositories {
     mavenCentral()
 }
+
+project.ext.set("libraryArtifactId", "processor")
+apply plugin: 'com.halcyonmobile.plugin.publish.artifactory.jar-library'
