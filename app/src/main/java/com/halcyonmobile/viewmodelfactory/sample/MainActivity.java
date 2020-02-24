@@ -17,9 +17,9 @@
 
 package com.halcyonmobile.viewmodelfactory.sample;
 
-import android.arch.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 
 
 import javax.inject.Inject;
@@ -39,6 +39,6 @@ public class MainActivity extends AppCompatActivity {
 
         AndroidInjection.inject(this);
 
-        ViewModelProviders.of(this, factoryBuilder.build(getIntent().getIntExtra("X", 0))).get(MainViewModel.class);
+        new ViewModelProvider(this, factoryBuilder.build(getIntent().getIntExtra("X", 0))).get(MainViewModel.class);
     }
 }

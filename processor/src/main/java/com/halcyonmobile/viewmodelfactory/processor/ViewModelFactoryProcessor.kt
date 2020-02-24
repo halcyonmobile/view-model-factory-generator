@@ -77,7 +77,7 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
             val annotatedElements = roundEnvironment.getElementsAnnotatedWith(ViewModelFactory::class.java)
             if (annotatedElements.any { element -> element.kind != ElementKind.CLASS }) {
                 //todo better error message
-                messager.printMessage(Diagnostic.Kind.ERROR, "Can be applied to class.")
+                messager.printMessage(Diagnostic.Kind.ERROR, "Cant be applied to class.")
                 return true
             }
             val annotatedViewModelClasses = annotatedElements.map { element -> AnnotatedViewModelClass(elementUtils, element as TypeElement) }
@@ -229,10 +229,10 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
 
     companion object {
 
-        private const val FACTORY_INTERFACE_PACKAGE = "android.arch.lifecycle"
+        private const val FACTORY_INTERFACE_PACKAGE = "androidx.lifecycle"
         private const val VIEWMODEL_PROVIDER_CLASS_SIMPLE_NAME = "ViewModelProvider"
         private const val FACTORY_INTERFACE_SIMPLE_NAME = "Factory"
-        private const val VIEWMODEL_CLASS_PACKAGE = "android.arch.lifecycle"
+        private const val VIEWMODEL_CLASS_PACKAGE = "androidx.lifecycle"
         private const val VIEWMODEL_CLASS_SIMPLE_NAME = "ViewModel"
 
         private const val CONSTRUCTOR_MARKER = "whichConstructor"
@@ -253,8 +253,8 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                 .apply {
                     addAll(
                         arrayOf(
-                            "android.support.annotation" to "NonNull",
-                            "android.support.annotation.Nullable" to "Nullable"
+                            "androidx.annotation" to "NonNull",
+                            "androidx.annotation.Nullable" to "Nullable"
                         )
                             .map { ClassName.get(it.first, it.second) })
                 }

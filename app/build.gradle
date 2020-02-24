@@ -4,15 +4,14 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'com.jfrog.artifactory'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 28
     defaultConfig {
         applicationId "com.halcyonmobile.viewmodelfactory.test"
         minSdkVersion 19
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "0.0.1"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -27,14 +26,13 @@ android {
 artifactoryPublish.skip = true
 
 ext {
-    daggerVersion = '2.15'
-    androidArchVersion = '1.1.1'
+    daggerVersion = '2.26'
     supportLibVersion = '27.1.1'
 }
 
 dependencies {
-    implementation "com.android.support:appcompat-v7:$supportLibVersion"
-    implementation "com.android.support:support-annotations:$supportLibVersion"
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.annotation:annotation:1.1.0'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     // dagger
@@ -43,16 +41,15 @@ dependencies {
     kapt "com.google.dagger:dagger-compiler:$daggerVersion"
     kapt "com.google.dagger:dagger-android-processor:$daggerVersion"
 
-    // Android arch components
-    implementation "android.arch.lifecycle:runtime:$androidArchVersion"
-    implementation "android.arch.lifecycle:extensions:$androidArchVersion"
-    kapt "android.arch.lifecycle:compiler:$androidArchVersion"
+    implementation 'androidx.lifecycle:lifecycle-runtime:2.2.0'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    kapt 'androidx.lifecycle:lifecycle-compiler:2.2.0'
 
     implementation project(':factory-annotation')
     kapt project(':processor')
 
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation('com.android.support.test.espresso:espresso-core:3.0.1', {
+    androidTestImplementation('androidx.test.espresso:espresso-core:3.1.0', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 }

@@ -17,9 +17,9 @@
 
 package com.halcyonmobile.viewmodelfactory.sample;
 
-import android.arch.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModel;
 import android.content.Context;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import com.halcyonmobile.viewmodelfactory.annotation.Provided;
 import com.halcyonmobile.viewmodelfactory.annotation.ViewModelFactory;

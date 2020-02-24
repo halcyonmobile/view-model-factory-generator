@@ -27,7 +27,7 @@ import javax.inject.Singleton;
 
 @Singleton
 @ViewModelFactory
-class MainViewModel extends android.arch.lifecycle.ViewModel {
+class MainViewModel extends androidx.lifecycle.ViewModel {
 
     MainViewModel(@Provided @ApplicationContext Context context) {
         System.err.println(context);

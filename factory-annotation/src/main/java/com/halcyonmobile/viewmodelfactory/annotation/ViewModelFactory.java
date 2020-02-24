@@ -23,8 +23,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates an {@link android.arch.lifecycle.ViewModel} class for which a
- * {@link android.arch.lifecycle.ViewModelProviders.Factory} builder will be generated.
+ * Annotates an {@link androidx.lifecycle.ViewModel} class for which a
+ * {@link androidx.lifecycle.ViewModelProviders.Factory} builder will be generated.
  * The generated class will have the name of the ViewModel postpended with FactoryBuilder and
  * will be in the same package.
  * For example, @{@link ViewModelFactory} MainViewModel will produce a FactoryBuilder named

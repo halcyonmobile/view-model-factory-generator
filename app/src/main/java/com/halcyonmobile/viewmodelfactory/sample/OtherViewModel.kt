@@ -17,7 +17,7 @@
 
 package com.halcyonmobile.viewmodelfactory.sample
 
-import android.arch.lifecycle.ViewModel
+import androidx.lifecycle.ViewModel
 import com.halcyonmobile.viewmodelfactory.annotation.ViewModelFactory
 
 @ViewModelFactory
