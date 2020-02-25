@@ -9,7 +9,7 @@ kapt {
 }
 
 ext {
-	viewModelGeneratorVersion = *latestVersionHere(0.0.1.beta1)*
+	viewModelGeneratorVersion = *latestVersionHere(1.0.1)*
 }
 dependencies {
     implementation "com.halcyonmobile.viewmodelfactorygenerator:factory-annotation:$viewModelGeneratorVersion"
