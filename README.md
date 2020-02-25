@@ -63,11 +63,31 @@ public class MainActivity extends AppCompatActivity {
 
         AndroidInjection.inject(this);
 
-        ViewModelProviders.of(this, factoryBuilder.build(getIntent().getIntExtra("MAIN_ACTIVITY_X", 0)).get(MainViewModel.class);
+        ViewModelProvider(this, factoryBuilder.build(getIntent().getIntExtra("MAIN_ACTIVITY_X", 0)).get(MainViewModel.class);
     }
 }
 ```
 
+##### Dagger 2.25.2 >
+Some people had issues with the generated code after 2.25.2.
+Couldn't figure out yet what's the cause, probably something changed in the Component generation. For now if this happens to what you can do is injecting Provider instead of the direct class, so it will be:
+```java
+public class MainActivity extends AppCompatActivity {
+
+    @Inject
+    Provider<MainViewModelFactoryBuilder> factoryBuilder;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        AndroidInjection.inject(this);
+
+        ViewModelProvider(this, factoryBuilder.get().build(getIntent().getIntExtra("MAIN_ACTIVITY_X", 0)).get(MainViewModel.class);
+    }
+}
+```
 
 <h1 id="license">License :page_facing_up:</h1>
 
