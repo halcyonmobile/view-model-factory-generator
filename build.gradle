@@ -39,6 +39,7 @@ allprojects {
         google()
         jcenter()
         mavenCentral()
+        mavenLocal()
         maven {
             url "http://artifactory.halcyonmobile.info:8081/artifactory/libs-release-local"
             credentials {
