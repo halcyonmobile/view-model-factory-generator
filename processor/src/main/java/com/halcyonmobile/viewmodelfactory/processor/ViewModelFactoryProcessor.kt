@@ -45,6 +45,7 @@ import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
+import javax.lang.model.type.DeclaredType
 import javax.lang.model.util.Elements
 import javax.tools.Diagnostic
 
@@ -93,6 +94,10 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
     }
 
     private fun processAnnotatedViewModelClass(annotatedViewModelClass: AnnotatedViewModelClass) {
+        if (annotatedViewModelClass.constructors.isEmpty()){
+            throw IllegalStateException("Can't access any constructor of ${annotatedViewModelClass.packageName}.${annotatedViewModelClass.className}")
+        }
+
         val thereIsMoreThanOneConstructor = annotatedViewModelClass.constructors.size > 1
 
         // initialize the FactoryBuilder class
@@ -219,12 +224,14 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
         val simpleClassName: String = typeElement.simpleName.toString()
         val packageName: String = elementUtils.getPackageOf(typeElement).toString()
         val constructors: List<ExecutableElement> = typeElement.enclosedElements
+            .asSequence()
             .filter { it.kind == ElementKind.CONSTRUCTOR }
             .map { it as ExecutableElement }
+            .filterNot{ it.modifiers.contains(Modifier.PRIVATE) || it.modifiers.contains(Modifier.PROTECTED)} // filter out non accessible constructors
+            .toList()
         val className: ClassName = ClassName.get(packageName, simpleClassName)
         val annotationMirrors: List<AnnotationMirror> = typeElement.annotationMirrors
             .filter { it.annotationType.asElement().simpleName.toString() != ViewModelFactory::class.java.simpleName }
-
     }
 
     companion object {
@@ -253,8 +260,8 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                 .apply {
                     addAll(
                         arrayOf(
-                            "androidx.annotation" to "NonNull",
-                            "androidx.annotation.Nullable" to "Nullable"
+                            "android.support.annotation" to "NonNull",
+                            "android.support.annotation.Nullable" to "Nullable"
                         )
                             .map { ClassName.get(it.first, it.second) })
                 }
@@ -313,7 +320,7 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                 } else {
                     classNameString
                 }
-                    .replace("\\.", "_")
+                    .replace(".", "")
             )
 
             variableElement.annotationMirrors

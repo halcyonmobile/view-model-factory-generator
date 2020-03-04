@@ -46,6 +46,19 @@ class ViewModelFactoryProcessorGenerationTest(testDescription: String, private v
                 addInputFile(javaFileName = "AnnotatedDependencyViewModel", resourceFileName = "AnnotatedDependencyViewModel.java")
                 addInputFile(javaFileName = "ApplicationContext", resourceFileName = "ApplicationContext.java")
                 setExpectedGeneratedFile(javaFileName = "AnnotatedDependencyViewModelFactoryBuilder", resourceFileName = "AnnotatedDependencyViewModelFactoryBuilder.java")
+            },
+            createParameter(testDescription = "ViewModel depends on inner class") {
+                addInputFile(javaFileName = "ViewModelDependOnFooBar", resourceFileName = "ViewModelDependOnFooBar.java")
+                addInputFile(javaFileName = "Foo", resourceFileName = "Foo.java")
+                setExpectedGeneratedFile(javaFileName = "ViewModelDependOnFooBarFactoryBuilder", resourceFileName = "ViewModelDependOnFooBarFactoryBuilder.java")
+            },
+            createParameter(testDescription = "Simple Kotlin MainViewModel test") {
+                addInputFile(javaFileName = "KotlinMainViewModel", resourceFileName = "KotlinMainViewModel.kt")
+                setExpectedGeneratedFile(javaFileName = "MainViewModelFactoryBuilder", resourceFileName = "MainViewModelFactoryBuilder.java")
+            },
+            createParameter(testDescription = "ViewModel with SavedStateHandler test") {
+                addInputFile(javaFileName = "SavedInstanceStateViewModel", resourceFileName = "SavedInstanceStateViewModel.java")
+                setExpectedGeneratedFile(javaFileName = "SavedInstanceStateViewModelFactoryBuilder", resourceFileName = "SavedInstanceStateViewModelFactoryBuilder.java")
             }
         )
 
