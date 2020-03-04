@@ -7,6 +7,10 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "com.squareup:javapoet:$javapoet_version"
     implementation 'javax.inject:javax.inject:1'
+
+    testImplementation "com.google.truth:truth:0.40"
+    testImplementation "com.google.testing.compile:compile-testing:0.15"
+    testImplementation 'com.google.android:android:4.0.1.2'
 }
 
 sourceCompatibility = "$javaSourceVersion"
