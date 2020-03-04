@@ -17,14 +17,13 @@
 
 package com.halcyonmobile.viewmodelfactory.processor
 
-import java.nio.file.Files
+import java.io.File
 import java.nio.file.Paths
-import java.util.stream.Collectors
 
 /**
 + * Helper class which read the file in the resources folder with the given [fileName] into a string, each line separated with [lineDelimiter].
 + */
-fun Any.readResourceFileToString(fileName: String, lineDelimiter: String = "\n"): String {
+fun Any.readResourceFileToString(fileName: String): String {
     val path = this::class.java.classLoader.getResource(fileName).toURI().path
-    return Files.lines(Paths.get(path)).collect(Collectors.joining(lineDelimiter))
+    return File(Paths.get(path).toUri()).readText()
 }

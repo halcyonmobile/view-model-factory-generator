@@ -1,65 +1,76 @@
 package com.halcyonmobile.viewmodelfactory.processor
 
-import com.google.common.truth.Truth
-import com.google.testing.compile.JavaFileObjects
-import com.google.testing.compile.JavaSourcesSubjectFactory
+import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.SourceFile
+import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import javax.tools.JavaFileObject
 
 @RunWith(Parameterized::class)
-class ViewModelFactoryProcessorGenerationTest(testDescription: String, private val sourceFiles: List<ResourceFile>, private val generated: ResourceFile?) {
+class ViewModelFactoryProcessorGenerationTest(testDescription: String, private val sourceFiles: List<ResourceFile>, private val generatedFileName: String) {
 
-    data class ResourceFile(val javaFileName: String, val resourceFileName: String)
+    data class ResourceFile(val sourceFileName: String, val isKotlin: Boolean)
 
     @Test
     fun checks_the_generated_file_against_the_given() {
-        val input = sourceFiles.map(::toJavaFileObject)
-        val output = generated?.let(::toJavaFileObject)
+        val expectedGeneratedCode = readResourceFileToString(generatedFileName)
+        val kotlinSources = sourceFiles.filter { it.isKotlin }.map {
+            SourceFile.kotlin(it.sourceFileName, readResourceFileToString(it.sourceFileName))
+        }
+        val javaSources = sourceFiles.filterNot { it.isKotlin }.map {
+            SourceFile.java(it.sourceFileName, readResourceFileToString(it.sourceFileName))
+        }
 
-        Truth.assert_()
-            .about(JavaSourcesSubjectFactory.javaSources())
-            .that(input)
-            .processedWith(ViewModelFactoryProcessor())
-            .compilesWithoutError()
-            .run {
-                if (output == null) {
-                    this
-                } else {
-                    and().generatesSources(output)
-                }
-            }
+        val result = KotlinCompilation().apply {
+            sources = kotlinSources.plus(javaSources)
+
+            annotationProcessors = listOf(ViewModelFactoryProcessor())
+
+            inheritClassPath = true
+            messageOutputStream = System.out // see diagnostics in real time
+        }.compile()
+
+        System.err.println(result.sourcesGeneratedByAnnotationProcessor)
+
+        Assert.assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
+
+        val actualGeneratedSource = result.generatedFiles.first().readText()
+
+        Assert.assertEquals(expectedGeneratedCode.removeDuplicateWhiteSpaces(), actualGeneratedSource.removeDuplicateWhiteSpaces().removeMetadata())
     }
 
     companion object {
-        private const val DEFAULT_PACKAGE = "com.halcyonmobile.viewmodelfactory.sample"
+
+        private fun String.removeDuplicateWhiteSpaces(): String = replace("[ \t]+".toRegex(), " ")
+
+        private fun String.removeMetadata(): String = replace("@Metadata\\([^@]+@".toRegex(), "@")
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun parameters(): Collection<Array<out Any?>> = listOf(
             createParameter(testDescription = "Simple MainViewModel test") {
-                addInputFile(javaFileName = "MainViewModel", resourceFileName = "MainViewModel.java")
-                setExpectedGeneratedFile(javaFileName = "MainViewModelFactoryBuilder", resourceFileName = "MainViewModelFactoryBuilder.java")
+                addInputFile(resourceFileName = "MainViewModel.java", isKotlin = false)
+                setExpectedGeneratedFile(resourceFileName = "MainViewModelFactoryBuilder.java")
             },
             createParameter(testDescription = "ViewModel with annotated dependency") {
-                addInputFile(javaFileName = "AnnotatedDependencyViewModel", resourceFileName = "AnnotatedDependencyViewModel.java")
-                addInputFile(javaFileName = "ApplicationContext", resourceFileName = "ApplicationContext.java")
-                setExpectedGeneratedFile(javaFileName = "AnnotatedDependencyViewModelFactoryBuilder", resourceFileName = "AnnotatedDependencyViewModelFactoryBuilder.java")
+                addInputFile(resourceFileName = "AnnotatedDependencyViewModel.java", isKotlin = false)
+                addInputFile(resourceFileName = "ApplicationContext.java", isKotlin = false)
+                setExpectedGeneratedFile(resourceFileName = "AnnotatedDependencyViewModelFactoryBuilder.java")
             },
             createParameter(testDescription = "ViewModel depends on inner class") {
-                addInputFile(javaFileName = "ViewModelDependOnFooBar", resourceFileName = "ViewModelDependOnFooBar.java")
-                addInputFile(javaFileName = "Foo", resourceFileName = "Foo.java")
-                setExpectedGeneratedFile(javaFileName = "ViewModelDependOnFooBarFactoryBuilder", resourceFileName = "ViewModelDependOnFooBarFactoryBuilder.java")
+                addInputFile(resourceFileName = "Foo.java", isKotlin = false)
+                addInputFile(resourceFileName = "ViewModelDependOnFooBar.java", isKotlin = false)
+                setExpectedGeneratedFile(resourceFileName = "ViewModelDependOnFooBarFactoryBuilder.java")
             },
             createParameter(testDescription = "Simple Kotlin MainViewModel test") {
-                addInputFile(javaFileName = "KotlinMainViewModel", resourceFileName = "KotlinMainViewModel.kt")
-                setExpectedGeneratedFile(javaFileName = "MainViewModelFactoryBuilder", resourceFileName = "MainViewModelFactoryBuilder.java")
-            },
-            createParameter(testDescription = "ViewModel with SavedStateHandler test") {
-                addInputFile(javaFileName = "SavedInstanceStateViewModel", resourceFileName = "SavedInstanceStateViewModel.java")
-                setExpectedGeneratedFile(javaFileName = "SavedInstanceStateViewModelFactoryBuilder", resourceFileName = "SavedInstanceStateViewModelFactoryBuilder.java")
-            }
+                addInputFile(resourceFileName = "KotlinMainViewModel.kt", isKotlin = true)
+                setExpectedGeneratedFile(resourceFileName = "KotlinMainViewModelFactoryBuilder.java")
+            }//,
+//            createParameter(testDescription = "ViewModel with SavedStateHandler test") {
+//                addInputFile(resourceFileName = "SavedInstanceStateViewModel.java", isKotlin = false)
+//                setExpectedGeneratedFile(resourceFileName = "SavedInstanceStateViewModelFactoryBuilder.java")
+//            }
         )
 
         /**
@@ -72,38 +83,30 @@ class ViewModelFactoryProcessorGenerationTest(testDescription: String, private v
         }
 
         /**
-         * Interface used by [createParameter] DSL to setup a paramer for the test.
+         * Interface used by [createParameter] DSL to setup a paramert for the test.
          */
         private interface Parameter {
-            fun addInputFile(javaFileName: String, resourceFileName: String)
+             fun addInputFile(resourceFileName: String, isKotlin: Boolean)
 
-            fun setExpectedGeneratedFile(javaFileName: String, resourceFileName: String)
+            fun setExpectedGeneratedFile(resourceFileName: String)
         }
 
         /**
          * Concrete implementation of [Parameter] so the [createParameter] can actually access the data given to the DSL.
          */
         private class ParameterImpl : Parameter {
-            private var _expectedGeneratedFile: ResourceFile? = null
-            val expectedGeneratedFile get() = _expectedGeneratedFile
+            private var _expectedGeneratedFile: String? = null
+            val expectedGeneratedFile : String get() = _expectedGeneratedFile!!
             private val _inputFiles = mutableListOf<ResourceFile>()
             val inputFiles: List<ResourceFile> get() = _inputFiles
 
-            override fun addInputFile(javaFileName: String, resourceFileName: String) {
-                _inputFiles.add(ResourceFile(javaFileName.addPackage(), resourceFileName))
+            override fun addInputFile(resourceFileName: String, isKotlin: Boolean) {
+                _inputFiles.add(ResourceFile(resourceFileName, isKotlin))
             }
 
-            override fun setExpectedGeneratedFile(javaFileName: String, resourceFileName: String) {
-                _expectedGeneratedFile = ResourceFile(javaFileName.addPackage(), resourceFileName)
+            override fun setExpectedGeneratedFile(resourceFileName: String) {
+                _expectedGeneratedFile = resourceFileName
             }
-
-            private fun String.addPackage() = "$DEFAULT_PACKAGE.$this"
         }
-
-        /**
-         * Helper function which converts a [ResourceFile] into a [JavaFileObject]
-         */
-        private fun toJavaFileObject(resourceFile: ResourceFile) =
-            JavaFileObjects.forSourceString(resourceFile.javaFileName, readResourceFileToString(resourceFile.resourceFileName))
     }
 }

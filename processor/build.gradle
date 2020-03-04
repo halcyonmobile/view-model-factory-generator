@@ -8,9 +8,8 @@ dependencies {
     implementation "com.squareup:javapoet:$javapoet_version"
     implementation 'javax.inject:javax.inject:1'
 
-    testImplementation "com.google.truth:truth:0.40"
-    testImplementation "com.google.testing.compile:compile-testing:0.15"
-    testImplementation 'com.google.android:android:4.0.1.2'
+    testImplementation 'junit:junit:4.13'
+    testImplementation 'com.github.tschuchortdev:kotlin-compile-testing:1.2.6'
 }
 
 sourceCompatibility = "$javaSourceVersion"
