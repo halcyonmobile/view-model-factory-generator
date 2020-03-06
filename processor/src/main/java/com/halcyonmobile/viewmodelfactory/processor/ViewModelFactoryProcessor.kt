@@ -45,7 +45,6 @@ import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
-import javax.lang.model.type.DeclaredType
 import javax.lang.model.util.Elements
 import javax.tools.Diagnostic
 
@@ -94,7 +93,7 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
     }
 
     private fun processAnnotatedViewModelClass(annotatedViewModelClass: AnnotatedViewModelClass) {
-        if (annotatedViewModelClass.constructors.isEmpty()){
+        if (annotatedViewModelClass.constructors.isEmpty()) {
             throw IllegalStateException("Can't access any constructor of ${annotatedViewModelClass.packageName}.${annotatedViewModelClass.className}")
         }
 
@@ -111,15 +110,33 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Inject::class.java)
 
+        val savedStateClassName = ClassName.get("androidx.lifecycle", "SavedStateHandle")
+        val supportsSavedInstanceState = annotatedViewModelClass.constructors.flatMap { it.parameters }.any { TypeName.get(it.asType()) == savedStateClassName }
+
         // initialize the factory class
         val factoryClass = TypeSpec
             .classBuilder(FACTORY_CLASS_NAME)
-            .addSuperinterface(ClassName.get(FACTORY_INTERFACE_PACKAGE, VIEWMODEL_PROVIDER_CLASS_SIMPLE_NAME, FACTORY_INTERFACE_SIMPLE_NAME))
+            .let {
+                if (supportsSavedInstanceState) {
+                    it.superclass(ClassName.get(SAVED_STATE_VIEW_MODEL_PROVIDER_PACKAGE, SAVED_STATE_VIEW_MODEL_PROVIDER_CLASS_SIMPLE_NAME))
+                } else {
+                    it.addSuperinterface(ClassName.get(FACTORY_INTERFACE_PACKAGE, VIEWMODEL_PROVIDER_CLASS_SIMPLE_NAME, FACTORY_INTERFACE_SIMPLE_NAME))
+                }
+            }
             .addModifiers(Modifier.FINAL, Modifier.PUBLIC, Modifier.STATIC)
             .applyWhen(thereIsMoreThanOneConstructor) {
                 addField(Int::class.java, CONSTRUCTOR_MARKER)
             }
         val createMethodStatements = StringBuilder(if (thereIsMoreThanOneConstructor) "switch ($CONSTRUCTOR_MARKER) {\n" else "")
+
+        val nonNullAnnotationClassName = ClassName.get("androidx.annotation", "NonNull")
+        val nullableAnnotationClassName = ClassName.get("androidx.annotation", "Nullable")
+        val bundleParameterSpec = ParameterSpec.builder(ClassName.get("android.os", "Bundle"), "defaultArgs")
+            .addAnnotation(ClassName.get("androidx.annotation", "Nullable"))
+            .build()
+        val savedStateRegistryOwnerParameterSpec = ParameterSpec.builder(ClassName.get("androidx.savedstate", "SavedStateRegistryOwner"), "owner")
+            .addAnnotation(nonNullAnnotationClassName)
+            .build()
 
         annotatedViewModelClass.constructors.forEachIndexed { constructorIndex, modelConstructor ->
             // for every constructor of the ViewModel, we have a build method in the factory builder
@@ -128,11 +145,21 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(ClassName.get("", FACTORY_CLASS_NAME))
             val buildMethodStatements = StringBuilder("return new $FACTORY_CLASS_NAME(")
+            if (supportsSavedInstanceState) {
+                buildMethod.addParameter(savedStateRegistryOwnerParameterSpec)
+                buildMethod.addParameter(bundleParameterSpec)
+                buildMethodStatements.append("owner, defaultArgs, ")
+            }
 
             // for every constructor of the ViewModel, we have a constructor for the Factory
             val factoryConstructor = MethodSpec
                 .constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
+                .applyWhen(supportsSavedInstanceState) {
+                    addStatement("super(${savedStateRegistryOwnerParameterSpec.name}, ${bundleParameterSpec.name})")
+                        .addParameter(savedStateRegistryOwnerParameterSpec)
+                        .addParameter(bundleParameterSpec)
+                }
                 .applyWhen(thereIsMoreThanOneConstructor) {
                     addStatement("this.$CONSTRUCTOR_MARKER = $constructorIndex")
                 }
@@ -151,10 +178,13 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                         // if the parameter should not be injected with Dagger
                         factoryClassFieldName = "$parameterName${FIELD_SUFFIX}$constructorIndex"
 
-                        factoryClass.addVariableElementAsPrivateField(parameter, factoryClassFieldName)
-                        buildMethod.addVariableElementAsParameter(parameter, parameterName)
+                        if (TypeName.get(parameter.asType()) != savedStateClassName) {
+                            factoryClass.addVariableElementAsPrivateField(parameter, factoryClassFieldName)
+                            buildMethod.addVariableElementAsParameter(parameter, parameterName)
+                            buildMethodStatements.append(parameterName)
+                            buildMethodStatements.append(", ")
+                        }
 
-                        buildMethodStatements.append(parameterName)
                     } else {
                         // if the parameter should be injected with Dagger
                         factoryClassFieldName = getAnnotatedVariableName(parameter)
@@ -169,13 +199,19 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                             factoryBuilderConstructor.addStatement("this.$factoryClassFieldName = $factoryClassFieldName")
                         }
                         buildMethodStatements.append(factoryClassFieldName)
+                        buildMethodStatements.append(", ")
                     }
-                    buildMethodStatements.append(", ")
 
-                    factoryConstructor.addVariableElementAsParameter(parameter, parameterName)
-                    factoryConstructor.addStatement("this.$factoryClassFieldName = $parameterName")
+                    if (TypeName.get(parameter.asType()) != savedStateClassName) {
+                        factoryConstructor.addVariableElementAsParameter(parameter, parameterName)
+                        factoryConstructor.addStatement("this.$factoryClassFieldName = $parameterName")
+                    }
 
-                    createMethodStatements.append("$factoryClassFieldName, ")
+                    if (TypeName.get(parameter.asType()) == savedStateClassName) {
+                        createMethodStatements.append("handle, ")
+                    } else {
+                        createMethodStatements.append("$factoryClassFieldName, ")
+                    }
 
                 }
                 //remove unnecessary " ," characters
@@ -204,10 +240,25 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
             MethodSpec
                 .methodBuilder(METHOD_NAME)
                 .addTypeVariable(typeVariableName)
-                .addModifiers(Modifier.PUBLIC)
+                .let {
+                    if (supportsSavedInstanceState) {
+                        it.addModifiers(Modifier.PROTECTED)
+                            .addParameter(ParameterSpec.builder(ClassName.get(String::class.java), "key").addAnnotation(nonNullAnnotationClassName).build())
+                            .addParameter(ParameterSpec.builder(classOfTypeVariableName, "modelClass").addAnnotation(nonNullAnnotationClassName).build())
+                            .addParameter(
+                                ParameterSpec.builder(
+                                    ClassName.get("androidx.lifecycle", "SavedStateHandle"),
+                                    "handle"
+                                ).addAnnotation(nonNullAnnotationClassName).build()
+                            )
+                            .addAnnotation(nonNullAnnotationClassName)
+                    } else {
+                        it.addModifiers(Modifier.PUBLIC)
+                            .addParameter(ParameterSpec.builder(classOfTypeVariableName, "modelClass").build())
+                    }
+                }
                 .addAnnotation(Override::class.java)
                 .returns(typeVariableName)
-                .addParameter(ParameterSpec.builder(classOfTypeVariableName, "modelClass").build())
                 .addCode(createMethodStatements.toString())
                 .build()
         )
@@ -227,7 +278,7 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
             .asSequence()
             .filter { it.kind == ElementKind.CONSTRUCTOR }
             .map { it as ExecutableElement }
-            .filterNot{ it.modifiers.contains(Modifier.PRIVATE) || it.modifiers.contains(Modifier.PROTECTED)} // filter out non accessible constructors
+            .filterNot { it.modifiers.contains(Modifier.PRIVATE) || it.modifiers.contains(Modifier.PROTECTED) } // filter out non accessible constructors
             .toList()
         val className: ClassName = ClassName.get(packageName, simpleClassName)
         val annotationMirrors: List<AnnotationMirror> = typeElement.annotationMirrors
@@ -238,6 +289,8 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
 
         private const val FACTORY_INTERFACE_PACKAGE = "androidx.lifecycle"
         private const val VIEWMODEL_PROVIDER_CLASS_SIMPLE_NAME = "ViewModelProvider"
+        private const val SAVED_STATE_VIEW_MODEL_PROVIDER_PACKAGE = FACTORY_INTERFACE_PACKAGE
+        private const val SAVED_STATE_VIEW_MODEL_PROVIDER_CLASS_SIMPLE_NAME = "AbstractSavedStateViewModelFactory"
         private const val FACTORY_INTERFACE_SIMPLE_NAME = "Factory"
         private const val VIEWMODEL_CLASS_PACKAGE = "androidx.lifecycle"
         private const val VIEWMODEL_CLASS_SIMPLE_NAME = "ViewModel"
@@ -261,7 +314,9 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                     addAll(
                         arrayOf(
                             "android.support.annotation" to "NonNull",
-                            "android.support.annotation.Nullable" to "Nullable"
+                            "android.support.annotation" to "Nullable",
+                            "androidx.annotation" to "NonNull",
+                            "androidx.annotation" to "Nullable"
                         )
                             .map { ClassName.get(it.first, it.second) })
                 }

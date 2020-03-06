@@ -33,11 +33,9 @@ class ViewModelFactoryProcessorGenerationTest(testDescription: String, private v
 
         System.err.println(result.sourcesGeneratedByAnnotationProcessor)
 
-        Assert.assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
-
         val actualGeneratedSource = result.generatedFiles.first().readText()
-
         Assert.assertEquals(expectedGeneratedCode.removeDuplicateWhiteSpaces(), actualGeneratedSource.removeDuplicateWhiteSpaces().removeMetadata())
+        Assert.assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
     }
 
     companion object {
@@ -66,11 +64,11 @@ class ViewModelFactoryProcessorGenerationTest(testDescription: String, private v
             createParameter(testDescription = "Simple Kotlin MainViewModel test") {
                 addInputFile(resourceFileName = "KotlinMainViewModel.kt", isKotlin = true)
                 setExpectedGeneratedFile(resourceFileName = "KotlinMainViewModelFactoryBuilder.java")
-            }//,
-//            createParameter(testDescription = "ViewModel with SavedStateHandler test") {
-//                addInputFile(resourceFileName = "SavedInstanceStateViewModel.java", isKotlin = false)
-//                setExpectedGeneratedFile(resourceFileName = "SavedInstanceStateViewModelFactoryBuilder.java")
-//            }
+            },
+            createParameter(testDescription = "ViewModel with SavedStateHandler test") {
+                addInputFile(resourceFileName = "SavedInstanceStateViewModel.java", isKotlin = false)
+                setExpectedGeneratedFile(resourceFileName = "SavedInstanceStateViewModelFactoryBuilder.java")
+            }
         )
 
         /**
