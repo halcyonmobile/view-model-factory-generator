@@ -15,7 +15,7 @@ import androidx.lifecycle.ViewModel;
  */
 @ViewModelFactory
 class SavedInstanceStateViewModel extends ViewModel {
-    SavedInstanceStateViewModel(SavedStateHandle savedStateHandle) {
+    SavedInstanceStateViewModel(@Provided SavedStateHandle savedStateHandle) {
     }
 
     SavedInstanceStateViewModel(@Provided Context context, SavedStateHandle savedStateHandle, int x) {

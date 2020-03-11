@@ -68,6 +68,44 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 
+#### Provided via dagger / manual
+
+- By default the parameters annotated with @Provided will be expected to come from dagger, this behaviour can be changed however.
+- In ViewModelFactory annotation one can change the default meaning of @Provided by changing it's value to ViewModelFactory.ProvidedVia.MANUAL, in such case everything annotated with @Provided is expected to come from the generated build function while everything else expected from dagger
+
+Example:
+```java
+@Singleton
+@ViewModelFactory(ViewModelFactory.ProvidedVia.MANUAL)
+class MainViewModel extends ViewModel {
+
+    MainViewModel(@Provided Context context, int x) {
+
+    }
+
+}
+```
+
+Usage of generated class:
+
+```java
+public class MainActivity extends AppCompatActivity {
+
+    @Inject
+    MainViewModelFactoryBuilder factoryBuilder;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        AndroidInjection.inject(this);
+
+        ViewModelProvider(this, factoryBuilder.build(this).get(MainViewModel.class);
+    }
+}
+```
+
 ##### Dagger 2.25.2 >
 Some people had issues with the generated code after 2.25.2.
 Couldn't figure out yet what's the cause, probably something changed in the Component generation. For now if this happens to what you can do is injecting Provider instead of the direct class, so it will be:

@@ -174,43 +174,39 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                 modelConstructor.parameters.forEach { parameter ->
                     val parameterName = parameter.simpleName.toString()
                     val factoryClassFieldName: String
-                    if (parameter.getAnnotation(Provided::class.java) == null) {
-                        // if the parameter should not be injected with Dagger
-                        factoryClassFieldName = "$parameterName${FIELD_SUFFIX}$constructorIndex"
+                    if (TypeName.get(parameter.asType()) != savedStateClassName) {
+                        if ((parameter.getAnnotation(Provided::class.java) == null) == annotatedViewModelClass.providedViaDagger) {
+                            // if the parameter should not be injected with Dagger
+                            factoryClassFieldName = "$parameterName${FIELD_SUFFIX}$constructorIndex"
 
-                        if (TypeName.get(parameter.asType()) != savedStateClassName) {
                             factoryClass.addVariableElementAsPrivateField(parameter, factoryClassFieldName)
                             buildMethod.addVariableElementAsParameter(parameter, parameterName)
                             buildMethodStatements.append(parameterName)
                             buildMethodStatements.append(", ")
+
+                        } else {
+                            // if the parameter should be injected with Dagger
+                            factoryClassFieldName = getAnnotatedVariableName(parameter)
+
+                            if (!injectedFieldNames.contains(factoryClassFieldName)) {
+                                // we only create the fields & parameters if a type like this was not market to inject yet
+                                injectedFieldNames.add(factoryClassFieldName)
+                                factoryBuilderClass.addVariableElementAsPrivateField(parameter, factoryClassFieldName, Modifier.FINAL)
+                                factoryClass.addVariableElementAsPrivateField(parameter, factoryClassFieldName)
+
+                                factoryBuilderConstructor.addVariableElementAsParameter(parameter, factoryClassFieldName)
+                                factoryBuilderConstructor.addStatement("this.$factoryClassFieldName = $factoryClassFieldName")
+                            }
+                            buildMethodStatements.append(factoryClassFieldName)
+                            buildMethodStatements.append(", ")
                         }
 
-                    } else {
-                        // if the parameter should be injected with Dagger
-                        factoryClassFieldName = getAnnotatedVariableName(parameter)
-
-                        if (!injectedFieldNames.contains(factoryClassFieldName)) {
-                            // we only create the fields & parameters if a type like this was not market to inject yet
-                            injectedFieldNames.add(factoryClassFieldName)
-                            factoryBuilderClass.addVariableElementAsPrivateField(parameter, factoryClassFieldName, Modifier.FINAL)
-                            factoryClass.addVariableElementAsPrivateField(parameter, factoryClassFieldName)
-
-                            factoryBuilderConstructor.addVariableElementAsParameter(parameter, factoryClassFieldName)
-                            factoryBuilderConstructor.addStatement("this.$factoryClassFieldName = $factoryClassFieldName")
-                        }
-                        buildMethodStatements.append(factoryClassFieldName)
-                        buildMethodStatements.append(", ")
-                    }
-
-                    if (TypeName.get(parameter.asType()) != savedStateClassName) {
                         factoryConstructor.addVariableElementAsParameter(parameter, parameterName)
                         factoryConstructor.addStatement("this.$factoryClassFieldName = $parameterName")
-                    }
 
-                    if (TypeName.get(parameter.asType()) == savedStateClassName) {
-                        createMethodStatements.append("handle, ")
-                    } else {
                         createMethodStatements.append("$factoryClassFieldName, ")
+                    } else {
+                        createMethodStatements.append("handle, ")
                     }
 
                 }
@@ -283,6 +279,7 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
         val className: ClassName = ClassName.get(packageName, simpleClassName)
         val annotationMirrors: List<AnnotationMirror> = typeElement.annotationMirrors
             .filter { it.annotationType.asElement().simpleName.toString() != ViewModelFactory::class.java.simpleName }
+        val providedViaDagger: Boolean = typeElement.getAnnotation(ViewModelFactory::class.java)?.value != ViewModelFactory.ProvidedVia.MANUAL
     }
 
     companion object {
@@ -366,8 +363,12 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
             //remove package name
             var p = 0
             val classNameString = TypeName.get(variableElement.asType()).toString()
-            while (p < classNameString.length && Character.isLowerCase(classNameString.codePointAt(p))) {
-                p = classNameString.indexOf('.', p) + 1
+            if (classNameString.contains('.')) {
+                while (p < classNameString.length && Character.isLowerCase(classNameString.codePointAt(p))) {
+                    p = classNameString.indexOf('.', p) + 1
+                }
+            } else {
+                nameBuilder.append("injected_")
             }
             nameBuilder.append(
                 if (p > 0 && p < classNameString.length) {
@@ -383,6 +384,7 @@ class ViewModelFactoryProcessor : AbstractProcessor() {
                 .forEach {
                     nameBuilder.append("_${it.annotationType.asElement().simpleName}")
                 }
+
 
             return nameBuilder.toString().decapitalize()
         }

@@ -68,6 +68,14 @@ class ViewModelFactoryProcessorGenerationTest(testDescription: String, private v
             createParameter(testDescription = "ViewModel with SavedStateHandler test") {
                 addInputFile(resourceFileName = "SavedInstanceStateViewModel.java", isKotlin = false)
                 setExpectedGeneratedFile(resourceFileName = "SavedInstanceStateViewModelFactoryBuilder.java")
+            },
+            createParameter(testDescription = "ViewModel with Manual Provided Annotations test") {
+                addInputFile(resourceFileName = "ManualProvidedViewModel.java", isKotlin = false)
+                setExpectedGeneratedFile(resourceFileName = "ManualProvidedViewModelFactoryBuilder.java")
+            },
+            createParameter(testDescription = "ViewModel with Manual Provided Annotations And SavedState test") {
+                addInputFile(resourceFileName = "SavedStateWithManualProvidedViewModel.java", isKotlin = false)
+                setExpectedGeneratedFile(resourceFileName = "SavedStateWithManualProvidedViewModelFactoryBuilder.java")
             }
         )
 

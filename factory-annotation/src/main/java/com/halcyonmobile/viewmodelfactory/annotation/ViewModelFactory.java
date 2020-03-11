@@ -41,4 +41,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
 public @interface ViewModelFactory {
+
+    ProvidedVia value() default ProvidedVia.DAGGER;
+
+    enum ProvidedVia {
+        DAGGER,
+        MANUAL
+    }
 }

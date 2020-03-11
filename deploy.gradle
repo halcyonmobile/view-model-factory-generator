@@ -1,9 +1,9 @@
 // RELEASING
-// # 0:              update the libraryVersion
-// # 1:              open terminal and run the following commands
-// # 2:      ./gradlew publishToBintray
+// # 0: update the libraryVersion
+// # 1: open terminal and run the following commands
+// # 2: ./gradlew publishToBintray
 // # 3: make sure you add the published library to jcenter on the site (bintray)
 
 ext.libraryGroupId = 'viewmodelfactorygenerator'
-ext.libraryVersion = '1.1.0'
+ext.libraryVersion = '1.1.1'
 ext.bintray_source_url = "https://github.com/halcyonmobile/ViewModelFactoryGenerator"
