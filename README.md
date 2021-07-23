@@ -6,7 +6,7 @@
 
 ```gradle
 // top level build.gradle
-{
+//..
 allprojects {
     repositories {
         // ...
