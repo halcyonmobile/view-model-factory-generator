@@ -6,4 +6,4 @@
 
 ext.libraryGroupId = 'viewmodelfactorygenerator'
 ext.libraryVersion = '1.1.2'
-ext.githubPackagePath = 'halcyonmobile/ViewModelFactoryGenerator'
+ext.githubPackagePath = 'halcyonmobile/view-model-factory-generator'
