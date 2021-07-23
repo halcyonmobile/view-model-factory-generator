@@ -2,7 +2,29 @@
 
 ### Square had the same idea, but generalized, so I would kindly suggest to check it out if it fits your needs more: https://github.com/square/AssistedInject
 
+### Ensure you have the HalcyonMobile GitHub Packages as a repository
+
+```gradle
+// top level build.gradle
+{
+allprojects {
+    repositories {
+        // ...
+        maven {
+            url "https://maven.pkg.github.com/halcyonmobile/android-common-extensions"
+            credentials {
+                username = System.getenv("GITHUB_USERNAME")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+```
+
+Note: you only need one maven declaration with "halcyonmobile/{specific}", every other package will be accessable.
+
 ### How do I get set up? ###
+
 ```groovy
 kapt {
 	correctErrorTypes = true

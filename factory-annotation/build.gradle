@@ -4,4 +4,4 @@ sourceCompatibility = "$javaSourceVersion"
 targetCompatibility = "$javaSourceVersion"
 
 project.ext.set("libraryArtifactId", "factory-annotation")
-apply plugin: 'com.halcyonmobile.plugin.publish.artifactory.jar-library'
+apply plugin: 'com.halcyonmobile.plugin.publish.custom.jar-library'
