@@ -11,7 +11,7 @@ allprojects {
     repositories {
         // ...
         maven {
-            url "https://maven.pkg.github.com/halcyonmobile/android-common-extensions"
+            url "https://maven.pkg.github.com/halcyonmobile/view-model-factory-generator"
         }
     }
 }
